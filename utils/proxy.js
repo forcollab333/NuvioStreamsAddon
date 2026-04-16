@@ -9,6 +9,8 @@ function getAxiosConfig() {
     return {};
   }
 
+  console.log("getAxiosConfig ", HttpsProxyAgent);
+
   const agent = new HttpsProxyAgent(process.env.ALL_PROXY_URL);
 
   return {
@@ -22,6 +24,9 @@ function getFetchConfig() {
   if (!process.env.ALL_PROXY_URL) {
     return {};
   }
+
+  console.log("getFetchConfig ", HttpsProxyAgent);
+
   return {
     agent: new HttpsProxyAgent(process.env.ALL_PROXY_URL),
   };

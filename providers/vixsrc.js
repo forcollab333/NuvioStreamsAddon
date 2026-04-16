@@ -4,6 +4,8 @@
  * Converted to Promise-based syntax for sandbox compatibility
  */
 
+const { getFetchConfig } = require("../utils/proxy");
+
 // Constants
 const TMDB_API_KEY = "68e094699525b18a70bab2f86b1fa706";
 const BASE_URL = 'https://vixsrc.to';

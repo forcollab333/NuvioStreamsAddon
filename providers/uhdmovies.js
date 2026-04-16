@@ -7,6 +7,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const RedisCache = require('../utils/redisCache');
 const { followRedirectToFilePage, extractFinalDownloadFromFilePage } = require('../utils/linkResolver');
+const { getAxiosConfig } = require('../utils/proxy');
 
 // Debug logging flag - set DEBUG=true to enable verbose logging
 const DEBUG = process.env.DEBUG === 'true' || process.env.UHDMOVIES_DEBUG === 'true';
@@ -118,7 +119,8 @@ const createAxiosInstance = () => {
       'Upgrade-Insecure-Requests': '1',
       'Cache-Control': 'max-age=0'
     },
-    timeout: 30000
+    timeout: 30000,
+    ...getAxiosConfig()
   };
 
   // Add proxy configuration if UHDMOVIES_PROXY_URL is set
