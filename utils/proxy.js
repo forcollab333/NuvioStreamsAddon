@@ -1,4 +1,8 @@
-const { HttpsProxyAgent } = require("https-proxy-agent");
+let HttpsProxyAgent;
+
+(async () => {
+  ({ HttpsProxyAgent } = await import("https-proxy-agent"));
+})();
 
 function getAxiosConfig() {
   if (!process.env.ALL_PROXY_URL) {
