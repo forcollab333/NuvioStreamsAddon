@@ -7,6 +7,7 @@ const { URL } = require('url');
 const path = require('path');
 const fs = require('fs').promises;
 const RedisCache = require('../utils/redisCache');
+const { getAxiosConfig } = require('../utils/proxy');
 
 // Debug logging flag - set DEBUG=true to enable verbose logging
 const DEBUG = process.env.DEBUG === 'true' || process.env['4KHDHUB_DEBUG'] === 'true';
@@ -43,7 +44,8 @@ async function fetchText(url, options = {}) {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 ...options.headers
             },
-            timeout: 10000
+            timeout: 10000,
+            ...getAxiosConfig()
         });
         return response.data;
     } catch (error) {
@@ -58,7 +60,7 @@ async function getTmdbDetails(tmdbId, type) {
         const isSeries = type === 'series' || type === 'tv';
         const url = `https://api.themoviedb.org/3/${isSeries ? 'tv' : 'movie'}/${tmdbId}?api_key=${TMDB_API_KEY}`;
         log(`[4KHDHub] Fetching TMDB details from: ${url}`);
-        const response = await axios.get(url);
+        const response = await axios.get(url, getAxiosConfig());
         const data = response.data;
         // ...
 
