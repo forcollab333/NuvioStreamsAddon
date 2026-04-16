@@ -22,6 +22,7 @@ function makeRequest(url, options = {}) {
     return fetch(url, {
         method: options.method || 'GET',
         headers: defaultHeaders,
+        ...getFetchConfig(),
         ...options
     })
     .then(response => {
