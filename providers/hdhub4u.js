@@ -11,6 +11,7 @@ const { findBestMatch } = require('string-similarity');
 const fs = require('fs').promises;
 const path = require('path');
 const RedisCache = require('../utils/redisCache');
+const { getAxiosConfig } = require('../utils/proxy');
 
 // Debug logging flag - set DEBUG=true to enable verbose logging
 const DEBUG = process.env.DEBUG === 'true' || process.env.HDHUB4U_DEBUG === 'true';
@@ -76,7 +77,7 @@ const saveToCache = async (key, data) => {
 ensureCacheDir();
 
 // --- Proxy Configuration ---
-const HDHUB4U_PROXY_URL = process.env.HDHUB4U_PROXY_URL;
+const HDHUB4U_PROXY_URL = process.env.ALL_PROXY_URL;
 if (HDHUB4U_PROXY_URL) {
     log(`[HDHub4u] Proxy support enabled: ${HDHUB4U_PROXY_URL}`);
 } else {
@@ -111,9 +112,9 @@ const HEADERS = {
 // --- Proxy Wrapper Function ---
 const makeRequest = async (url, options = {}) => {
     if (HDHUB4U_PROXY_URL) {
-        const proxiedUrl = `${HDHUB4U_PROXY_URL}?url=${encodeURIComponent(url)}`;
+        const proxiedUrl = `?url=${encodeURIComponent(url)}`;
         log(`[HDHub4u] Using proxy for: ${url}`);
-        return axios.get(proxiedUrl, options);
+        return axios.get(proxiedUrl, { ...options, ...getAxiosConfig() });
     } else {
         return axios.get(url, options);
     }

@@ -13,6 +13,7 @@ const path = require('path');
 const { findBestMatch } = require('string-similarity');
 const RedisCache = require('../utils/redisCache');
 const { followRedirectToFilePage, extractFinalDownloadFromFilePage } = require('../utils/linkResolver');
+const { getAxiosConfig } = require('../utils/proxy');
 
 // Debug logging flag - set DEBUG=true to enable verbose logging
 const DEBUG = process.env.DEBUG === 'true' || process.env.MOVIESMOD_DEBUG === 'true';
@@ -33,7 +34,7 @@ function escapeRegExp(string) {
 }
 
 // --- Proxy Configuration ---
-const MOVIESMOD_PROXY_URL = process.env.MOVIESMOD_PROXY_URL;
+const MOVIESMOD_PROXY_URL = process.env.ALL_PROXY_URL;
 if (MOVIESMOD_PROXY_URL) {
     log(`[MoviesMod] Proxy support enabled: ${MOVIESMOD_PROXY_URL}`);
 } else {
@@ -141,9 +142,9 @@ ensureCacheDir();
 const makeRequest = async (url, options = {}) => {
     if (MOVIESMOD_PROXY_URL) {
         // Route through proxy
-        const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
+        const proxiedUrl = `${encodeURIComponent(url)}`;
         log(`[MoviesMod] Making proxied request to: ${url}`);
-        return axios.get(proxiedUrl, options);
+        return axios.get(proxiedUrl, { ...options, ...getAxiosConfig() });
     } else {
         // Direct request
         log(`[MoviesMod] Making direct request to: ${url}`);
@@ -186,7 +187,7 @@ const createProxiedSession = async (jar) => {
         const originalPost = session.post.bind(session);
 
         session.get = async (url, options = {}) => {
-            const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             log(`[MoviesMod] Making proxied SID GET request to: ${url}`);
 
             // Extract cookies from jar and add to headers
@@ -199,11 +200,11 @@ const createProxiedSession = async (jar) => {
                 };
             }
 
-            return originalGet(proxiedUrl, options);
+            return originalGet(proxiedUrl, { ...options, ...getAxiosConfig() });
         };
 
         session.post = async (url, data, options = {}) => {
-            const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             log(`[MoviesMod] Making proxied SID POST request to: ${url}`);
 
             // Extract cookies from jar and add to headers
@@ -216,7 +217,7 @@ const createProxiedSession = async (jar) => {
                 };
             }
 
-            return originalPost(proxiedUrl, data, options);
+            return originalPost(proxiedUrl, data, { ...options, ...getAxiosConfig() });
         };
     }
 
@@ -815,7 +816,7 @@ async function resolveVideoSeedLink(videoSeedUrl) {
 
             let apiResponse;
             if (MOVIESMOD_PROXY_URL) {
-                const proxiedApiUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(apiUrl)}`;
+                const proxiedApiUrl = `${encodeURIComponent(apiUrl)}`;
                 log(`[MoviesMod] Making proxied POST request to VideoSeed API`);
                 apiResponse = await axios.post(proxiedApiUrl, formData, {
                     headers: {
@@ -861,14 +862,15 @@ async function validateVideoUrl(url, timeout = 10000) {
         // Use proxy for URL validation if enabled
         let response;
         if (MOVIESMOD_PROXY_URL) {
-            const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             log(`[MoviesMod] Making proxied HEAD request for validation to: ${url}`);
             response = await axios.head(proxiedUrl, {
+                ...getAxiosConfig(),
                 timeout,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     'Range': 'bytes=0-1' // Just request first byte to test
-                }
+                },
             });
         } else {
             response = await axios.head(url, {
@@ -902,8 +904,9 @@ async function resolveVideoLeechRedirect(videoLeechUrl) {
         // Use HEAD request to get redirect location without downloading content
         let response;
         if (MOVIESMOD_PROXY_URL) {
-            const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(videoLeechUrl)}`;
+            const proxiedUrl = `${encodeURIComponent(videoLeechUrl)}`;
             response = await axios.head(proxiedUrl, {
+                ...getAxiosConfig(),
                 maxRedirects: 5,
                 validateStatus: () => true, // Accept all status codes
                 timeout: 15000
@@ -942,8 +945,9 @@ async function resolveVideoLeechRedirect(videoLeechUrl) {
         try {
             let getResponse;
             if (MOVIESMOD_PROXY_URL) {
-                const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(videoLeechUrl)}`;
+                const proxiedUrl = `${encodeURIComponent(videoLeechUrl)}`;
                 getResponse = await axios.get(proxiedUrl, {
+                    ...getAxiosConfig(),
                     maxRedirects: 5,
                     validateStatus: () => true,
                     timeout: 15000
@@ -993,8 +997,9 @@ async function validateUrlsParallel(urls, timeout = 10000) {
             // Use proxy for URL validation if enabled
             let response;
             if (MOVIESMOD_PROXY_URL) {
-                const proxiedUrl = `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}`;
+                const proxiedUrl = `${encodeURIComponent(url)}`;
                 response = await axios.head(proxiedUrl, {
+                    ...getAxiosConfig(),
                     timeout,
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -1346,7 +1351,7 @@ async function getMoviesModStreams(tmdbId, mediaType, seasonNum = null, episodeN
                         let finalDownloadUrl = await extractFinalDownloadFromFilePage($, {
                             origin,
                             get: (url, opts) => makeRequest(url, opts),
-                            post: (url, data, opts) => axios.post(MOVIESMOD_PROXY_URL ? `${MOVIESMOD_PROXY_URL}${encodeURIComponent(url)}` : url, data, opts),
+                            post: (url, data, opts) => axios.post(MOVIESMOD_PROXY_URL ? `${encodeURIComponent(url)}` : url, data, opts),
                             validate: (url) => validateVideoUrl(url),
                             log: console
                         });

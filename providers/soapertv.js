@@ -3,7 +3,7 @@ const cheerio = require('cheerio'); // As per original script: npm install cheer
 const { URLSearchParams } = require('url'); // For form data
 
 // Constants
-const PROXY_URL = process.env.SOAPERTV_PROXY_URL || process.env.SHOWBOX_PROXY_URL_VALUE;
+const PROXY_URL = process.env.ALL_PROXY_URL;
 const BASE_URL = 'https://soaper.cc';
 const TMDB_API_KEY_SOAPERTV = "439c478a771f35c05022f9feabcca01c"; // Public TMDB API key used by this provider
 

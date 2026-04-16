@@ -8,6 +8,7 @@ const path = require('path');
 const { findBestMatch } = require('string-similarity');
 const RedisCache = require('../utils/redisCache');
 const { followRedirectToFilePage, extractFinalDownloadFromFilePage } = require('../utils/linkResolver');
+const { getAxiosConfig } = require('../utils/proxy');
 
 // Dynamic import for axios-cookiejar-support
 let axiosCookieJarSupport = null;
@@ -285,7 +286,7 @@ async function getDramaDripDomain() {
 }
 
 // --- Proxy Configuration ---
-const DRAMADRIP_PROXY_URL = process.env.DRAMADRIP_PROXY_URL;
+const DRAMADRIP_PROXY_URL = process.env.ALL_PROXY_URL;
 if (DRAMADRIP_PROXY_URL) {
   console.log(`[DramaDrip] Proxy support enabled: ${DRAMADRIP_PROXY_URL}`);
 } else {
@@ -336,9 +337,9 @@ ensureCacheDir();
 const makeRequest = async (url, options = {}) => {
   if (DRAMADRIP_PROXY_URL) {
     // Route through proxy
-    const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+    const proxiedUrl = `${encodeURIComponent(url)}`;
     console.log(`[DramaDrip] Making proxied request to: ${url}`);
-    return axios.get(proxiedUrl, options);
+    return axios.get(proxiedUrl, { ...options, ...getAxiosConfig() });
   } else {
     // Direct request
     console.log(`[DramaDrip] Making direct request to: ${url}`);
@@ -362,6 +363,7 @@ const createProxiedSession = async (jar) => {
   const { wrapper } = await getAxiosCookieJarSupport();
   
   const sessionConfig = {
+    ...getAxiosConfig(),
     jar,
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
@@ -381,7 +383,7 @@ const createProxiedSession = async (jar) => {
     const originalPost = session.post.bind(session);
 
     session.get = async (url, options = {}) => {
-      const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+      const proxiedUrl = `${encodeURIComponent(url)}`;
       console.log(`[DramaDrip] Making proxied SID GET request to: ${url}`);
       
       // Extract cookies from jar and add to headers
@@ -398,7 +400,7 @@ const createProxiedSession = async (jar) => {
     };
 
     session.post = async (url, data, options = {}) => {
-      const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+      const proxiedUrl = `${encodeURIComponent(url)}`;
       console.log(`[DramaDrip] Making proxied SID POST request to: ${url}`);
       
       // Extract cookies from jar and add to headers
@@ -785,7 +787,7 @@ async function validateVideoUrl(url, timeout = 10000) {
         // Use proxy for URL validation if enabled
         let response;
         if (DRAMADRIP_PROXY_URL) {
-            const proxiedUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             console.log(`[DramaDrip] Making proxied HEAD request for validation to: ${url}`);
             response = await axios.head(proxiedUrl, {
                 timeout,
@@ -833,7 +835,7 @@ async function resolveFinalLink(downloadOption) {
                 const headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'x-token': 'video-seed.pro' };
                 
                 if (DRAMADRIP_PROXY_URL) {
-                    const proxiedApiUrl = `${DRAMADRIP_PROXY_URL}${encodeURIComponent(videoSeedApiUrl)}`;
+                    const proxiedApiUrl = `${encodeURIComponent(videoSeedApiUrl)}`;
                     console.log(`[DramaDrip] Making proxied POST request to video-seed.pro API`);
                     response = await axios.post(proxiedApiUrl, postData, { headers });
                 } else {

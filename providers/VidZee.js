@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { getAxiosConfig } = require('../utils/proxy');
 
 // Function to parse command line arguments
 const parseArgs = () => {
@@ -60,7 +61,7 @@ const getVidZeeStreams = async (tmdbId, mediaType, seasonNum, episodeNum) => {
         };
         let timeout = 7000; // Reduced timeout
 
-        const proxyBaseUrl = process.env.VIDZEE_PROXY_URL || process.env.SHOWBOX_PROXY_URL_VALUE;
+        const proxyBaseUrl = process.env.ALL_PROXY_URL;
         if (proxyBaseUrl) {
             finalApiUrl = proxyBaseUrl + encodeURIComponent(targetApiUrl);
         } else {
@@ -71,6 +72,7 @@ const getVidZeeStreams = async (tmdbId, mediaType, seasonNum, episodeNum) => {
 
         try {
             const response = await axios.get(finalApiUrl, {
+                ...getAxiosConfig(),
                 headers: headers,
                 timeout: timeout
             });

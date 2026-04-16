@@ -23,7 +23,7 @@ const getAxiosCookieJarSupport = async () => {
 };
 
 // --- Proxy Configuration ---
-const UHDMOVIES_PROXY_URL = process.env.UHDMOVIES_PROXY_URL;
+const UHDMOVIES_PROXY_URL = process.env.ALL_PROXY_URL;
 if (UHDMOVIES_PROXY_URL) {
   log(`[UHDMovies] Proxy support enabled: ${UHDMOVIES_PROXY_URL}`);
 } else {
@@ -139,7 +139,7 @@ const axiosInstance = createAxiosInstance();
 const makeRequest = async (url, options = {}) => {
   if (UHDMOVIES_PROXY_URL) {
     // Route through proxy
-    const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+    const proxiedUrl = `${encodeURIComponent(url)}`;
     log(`[UHDMovies] Making proxied request to: ${url}`);
     return axiosInstance.get(proxiedUrl, options);
   } else {
@@ -782,7 +782,7 @@ async function tryInstantDownload($) {
 
         let apiResponse;
         if (UHDMOVIES_PROXY_URL) {
-          const proxiedApiUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(apiUrl)}`;
+          const proxiedApiUrl = `${encodeURIComponent(apiUrl)}`;
           log(`[UHDMovies] Making proxied POST request for ${hostname} API`);
           apiResponse = await axiosInstance.post(proxiedApiUrl, formData, {
             headers: {
@@ -818,7 +818,7 @@ async function tryInstantDownload($) {
 
       let apiResponse;
       if (UHDMOVIES_PROXY_URL) {
-        const proxiedApiUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(apiUrl)}`;
+        const proxiedApiUrl = `${encodeURIComponent(apiUrl)}`;
         log(`[UHDMovies] Making proxied POST request for Instant Download API to: ${apiUrl}`);
         apiResponse = await axiosInstance.post(proxiedApiUrl, formData, {
           headers: {
@@ -976,7 +976,7 @@ async function validateVideoUrl(url, timeout = 10000) {
     // Use proxy for URL validation if enabled
     let response;
     if (UHDMOVIES_PROXY_URL) {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+      const proxiedUrl = `${encodeURIComponent(url)}`;
       log(`[UHDMovies] Making proxied HEAD request for validation to: ${url}`);
       response = await axiosInstance.head(proxiedUrl, {
         timeout,
@@ -1015,7 +1015,7 @@ async function validateVideoUrl(url, timeout = 10000) {
     // Fallback 2: Try GET with small range
     let getResponse;
     if (UHDMOVIES_PROXY_URL) {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+      const proxiedUrl = `${encodeURIComponent(url)}`;
       log(`[UHDMovies] Making proxied GET fallback request for validation to: ${url}`);
       getResponse = await axiosInstance.get(proxiedUrl, {
         timeout,
@@ -1049,7 +1049,7 @@ async function resolveVideoLeechRedirect(videoLeechUrl) {
     // Use HEAD request to get redirect location without downloading content
     let response;
     if (UHDMOVIES_PROXY_URL) {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(videoLeechUrl)}`;
+      const proxiedUrl = `${encodeURIComponent(videoLeechUrl)}`;
       response = await axiosInstance.head(proxiedUrl, {
         maxRedirects: 5,
         validateStatus: () => true, // Accept all status codes
@@ -1098,7 +1098,7 @@ async function resolveVideoLeechRedirect(videoLeechUrl) {
     try {
       let getResponse;
       if (UHDMOVIES_PROXY_URL) {
-        const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(videoLeechUrl)}`;
+        const proxiedUrl = `${encodeURIComponent(videoLeechUrl)}`;
         getResponse = await axiosInstance.get(proxiedUrl, {
           maxRedirects: 5,
           validateStatus: () => true,
@@ -1440,7 +1440,7 @@ const createProxiedSession = async (jar) => {
     const originalPost = session.post.bind(session);
 
     session.get = async (url, options = {}) => {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+      const proxiedUrl = `${encodeURIComponent(url)}`;
       log(`[UHDMovies] Making proxied SID GET request to: ${url}`);
 
       // Extract cookies from jar and add to headers
@@ -1457,7 +1457,7 @@ const createProxiedSession = async (jar) => {
     };
 
     session.post = async (url, data, options = {}) => {
-      const proxiedUrl = `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+      const proxiedUrl = `${encodeURIComponent(url)}`;
       log(`[UHDMovies] Making proxied SID POST request to: ${url}`);
 
       // Extract cookies from jar and add to headers
@@ -1780,7 +1780,7 @@ async function getUHDMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
         let finalUrl = await extractFinalDownloadFromFilePage($, {
           origin,
           get: (url, opts) => makeRequest(url, opts),
-          post: (url, data, opts) => axiosInstance.post(url.startsWith('http') ? (UHDMOVIES_PROXY_URL ? `${UHDMOVIES_PROXY_URL}${encodeURIComponent(url)}` : url) : url, data, opts),
+          post: (url, data, opts) => axiosInstance.post(url.startsWith('http') ? (UHDMOVIES_PROXY_URL ? `${encodeURIComponent(url)}` : url) : url, data, opts),
           validate: (url) => validateVideoUrl(url),
           log: console
         });

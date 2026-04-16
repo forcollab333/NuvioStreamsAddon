@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 const cheerio = require('cheerio');
+const { getFetchConfig } = require('../utils/proxy');
+
 // --- Constants ---
-const VIDSRC_PROXY_URL = process.env.VIDSRC_PROXY_URL;
+const VIDSRC_PROXY_URL = process.env.ALL_PROXY_URL;
 let BASEDOM = "https://cloudnestra.com"; // This can be updated by serversLoad
 const SOURCE_URL = "https://vidsrc.xyz/embed";
 // --- Helper: Conditional Proxied Fetch ---
@@ -9,11 +11,11 @@ const SOURCE_URL = "https://vidsrc.xyz/embed";
 // it routes requests through the proxy. Otherwise, it makes a direct request.
 async function fetchWrapper(url, options) {
     if (VIDSRC_PROXY_URL) {
-        const proxiedUrl = `${VIDSRC_PROXY_URL}${encodeURIComponent(url)}`;
+        const proxiedUrl = `${encodeURIComponent(url)}`;
         console.log(`[VidSrc Proxy] Fetching: ${url} via proxy`);
         // Note: The proxy will handle the actual fetching, so we send the request to the proxy URL.
         // We pass the original headers in the options, the proxy should forward them.
-        return fetch(proxiedUrl, options);
+        return fetch(proxiedUrl, { ...options, ...getFetchConfig()});
     }
     // If no proxy is set, fetch directly.
     console.log(`[VidSrc Direct] Fetching: ${url}`);

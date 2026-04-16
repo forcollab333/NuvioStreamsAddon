@@ -8,6 +8,8 @@ const FormData = require('form-data');
 const { findBestMatch } = require('string-similarity');
 const RedisCache = require('../utils/redisCache');
 const { followRedirectToFilePage, extractFinalDownloadFromFilePage } = require('../utils/linkResolver');
+const { getAxiosConfig } = require('../utils/proxy');
+
 
 // Dynamic import for axios-cookiejar-support
 let axiosCookieJarSupport = null;
@@ -48,7 +50,7 @@ async function getTopMoviesDomain() {
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "439c478a771f35c05022f9feabcca01c"; // Fallback to a public key
 
 // --- Proxy Configuration ---
-const TOPMOVIES_PROXY_URL = process.env.TOPMOVIES_PROXY_URL;
+const TOPMOVIES_PROXY_URL = process.env.ALL_PROXY_URL;
 if (TOPMOVIES_PROXY_URL) {
     console.log(`[TopMovies] Using proxy: ${TOPMOVIES_PROXY_URL}`);
 } else {
@@ -58,9 +60,9 @@ if (TOPMOVIES_PROXY_URL) {
 // Proxy wrapper function
 const makeRequest = (url, options = {}) => {
     if (TOPMOVIES_PROXY_URL) {
-        const proxiedUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+        const proxiedUrl = `${encodeURIComponent(url)}`;
         console.log(`[TopMovies] Making proxied request to: ${url}`);
-        return axios.get(proxiedUrl, options);
+        return axios.get(proxiedUrl, { ...options, ...getAxiosConfig() });
     } else {
         console.log(`[TopMovies] Making direct request to: ${url}`);
         return axios.get(url, options);
@@ -240,7 +242,7 @@ async function resolveSidToDriveleech(sidUrl) {
         const originalPost = session.post.bind(session);
 
         session.get = async (url, options = {}) => {
-            const proxiedUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             console.log(`[TopMovies] Making proxied SID GET request to: ${url}`);
             
             // Extract cookies from jar and add to headers
@@ -253,11 +255,11 @@ async function resolveSidToDriveleech(sidUrl) {
                 };
             }
             
-            return originalGet(proxiedUrl, options);
+            return originalGet(proxiedUrl, { ...options, ...getAxiosConfig() });
         };
 
         session.post = async (url, data, options = {}) => {
-            const proxiedUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             console.log(`[TopMovies] Making proxied SID POST request to: ${url}`);
             
             // Extract cookies from jar and add to headers
@@ -270,7 +272,7 @@ async function resolveSidToDriveleech(sidUrl) {
                 };
             }
             
-            return originalPost(proxiedUrl, data, options);
+            return originalPost(proxiedUrl, data, { ...options, ...getAxiosConfig() });
         };
     }
 
@@ -393,7 +395,7 @@ async function tryInstantDownload($) {
 
             let apiResponse;
             if (TOPMOVIES_PROXY_URL) {
-                const proxiedApiUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(apiUrl)}`;
+                const proxiedApiUrl = `${encodeURIComponent(apiUrl)}`;
                 console.log(`[TopMovies] Making proxied POST request for Instant Download API to: ${apiUrl}`);
                 apiResponse = await axiosInstance.post(proxiedApiUrl, formData, {
                     headers: {
@@ -513,9 +515,10 @@ async function validateVideoUrl(url, timeout = 10000) {
         // Use proxy for URL validation if enabled
         let response;
         if (TOPMOVIES_PROXY_URL) {
-            const proxiedUrl = `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${encodeURIComponent(url)}`;
             console.log(`[TopMovies] Making proxied HEAD request for validation to: ${url}`);
             response = await axios.head(proxiedUrl, {
+                ...getAxiosConfig(),
                 timeout,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -795,7 +798,7 @@ async function getTopMoviesStreams(tmdbId, mediaType = 'movie', season = null, e
         const finalDownloadUrl = await extractFinalDownloadFromFilePage($, {
           origin,
           get: (url, opts) => makeRequest(url, opts),
-          post: (url, data, opts) => axios.post(TOPMOVIES_PROXY_URL ? `${TOPMOVIES_PROXY_URL}${encodeURIComponent(url)}` : url, data, opts),
+          post: (url, data, opts) => axios.post(TOPMOVIES_PROXY_URL ? `${encodeURIComponent(url)}` : url, data, opts),
           validate: (url) => validateVideoUrl(url),
           log: console
         });
